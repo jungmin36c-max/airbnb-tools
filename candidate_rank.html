@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>입지 분석 툴 — 외국인관광도시민박업</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", sans-serif;
+    background: #f8f5f0;
+    color: #2c2418;
+    line-height: 1.6;
+    padding: 24px 16px 80px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  header { margin-bottom: 28px; }
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .sub { color: #7a6f5f; font-size: 13px; }
+  h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #8b6f47;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 18px 0 10px;
+  }
+
+  .grid { display: grid; gap: 16px; }
+  @media (min-width: 720px) {
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 22px;
+    box-shadow: 0 1px 3px rgba(60, 40, 20, 0.05);
+    margin-bottom: 16px;
+  }
+  .card h2 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #8b6f47;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ede7dc;
+  }
+
+  label { display: block; font-size: 13px; color: #5c5346; margin-bottom: 6px; font-weight: 500; }
+  small { display: block; font-size: 11px; color: #9a8f7f; margin-top: 4px; }
+  input[type="number"], input[type="text"], select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #d9d1c2;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #fdfbf7;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: #8b6f47;
+    background: #fff;
+  }
+  .field { margin-bottom: 12px; }
+
+  .btn-add {
+    padding: 12px 28px;
+    background: #8b6f47;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    margin-top: 12px;
+  }
+  .btn-add:hover { background: #6f5836; }
+  .btn-remove {
+    background: none;
+    border: none;
+    color: #b04040;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+  .btn-remove:hover { text-decoration: underline; }
+  .btn-detail {
+    background: #fdfbf7;
+    border: 1px solid #d9d1c2;
+    color: #5c5346;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: inherit;
+  }
+  .btn-detail:hover { border-color: #8b6f47; color: #8b6f47; }
+
+  .note {
+    font-size: 12px;
+    color: #9a8f7f;
+    padding: 10px 12px;
+    background: #faf6ee;
+    border-radius: 6px;
+    line-height: 1.5;
+  }
+
+  /* 후보 카드 */
+  .candidate {
+    background: #fff;
+    border: 1px solid #ede7dc;
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+  }
+  .candidate.top { border-color: #6b8e4e; background: linear-gradient(135deg, #fff 0%, #f4f8ed 100%); }
+  .candidate.disqualified { border-color: #c4a4a4; background: #faf3f3; opacity: 0.85; }
+  .candidate-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .candidate-name { font-size: 16px; font-weight: 700; color: #2c2418; }
+  .candidate-addr { font-size: 12px; color: #9a8f7f; margin-top: 2px; }
+  .total-score {
+    font-size: 30px;
+    font-weight: 800;
+    line-height: 1;
+    color: #8b6f47;
+  }
+  .top .total-score { color: #6b8e4e; }
+  .disqualified .total-score { color: #b04040; text-decoration: line-through; }
+  .total-label { font-size: 11px; color: #9a8f7f; text-align: right; }
+
+  .score-bar {
+    display: grid;
+    grid-template-columns: 90px 1fr 40px;
+    gap: 10px;
+    align-items: center;
+    margin: 5px 0;
+    font-size: 12px;
+  }
+  .score-track {
+    height: 8px;
+    background: #ede7dc;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .score-fill {
+    height: 100%;
+    background: #c4a878;
+    border-radius: 4px;
+    transition: width 0.4s;
+  }
+  .score-fill.high { background: #6b8e4e; }
+  .score-fill.mid { background: #c4a878; }
+  .score-fill.low { background: #c08530; }
+  .score-fill.bad { background: #b04040; }
+  .score-num { text-align: right; font-weight: 600; color: #5c5346; font-size: 12px; }
+
+  .reasons {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed #ede7dc;
+    font-size: 13px;
+  }
+  .reasons ul { list-style: none; padding: 0; }
+  .reasons li { padding: 3px 0 3px 18px; position: relative; line-height: 1.5; }
+  .reasons .pros li::before { content: "✓"; color: #6b8e4e; position: absolute; left: 0; font-weight: 700; }
+  .reasons .cons li::before { content: "✗"; color: #b04040; position: absolute; left: 0; font-weight: 700; }
+  .reasons .badges li::before { content: "⚠"; color: #c08530; position: absolute; left: 0; font-weight: 700; }
+  .reasons .pros { color: #4a6b32; margin-bottom: 8px; }
+  .reasons .cons { color: #7a4040; margin-bottom: 8px; }
+  .reasons .badges { color: #8a5a20; }
+
+  .disqualify-banner {
+    background: #b04040;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-top: 10px;
+    font-weight: 600;
+  }
+
+  /* 비교 차트 */
+  .compare-row {
+    display: grid;
+    grid-template-columns: 160px 1fr 60px;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .compare-row .name { color: #5c5346; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .compare-track { height: 24px; background: #f0e9da; border-radius: 4px; overflow: hidden; }
+  .compare-fill { height: 100%; border-radius: 4px; transition: width 0.4s; }
+  .compare-score { text-align: right; font-weight: 700; }
+
+  /* 비교 테이블 */
+  .compare-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 16px; }
+  .compare-table th, .compare-table td { padding: 8px 6px; text-align: center; border-bottom: 1px solid #ede7dc; }
+  .compare-table th { background: #faf6ee; font-weight: 600; color: #5c5346; font-size: 11px; }
+  .compare-table td:first-child, .compare-table th:first-child { text-align: left; font-weight: 600; }
+
+  .empty {
+    text-align: center;
+    color: #9a8f7f;
+    padding: 30px;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>입지 분석 툴 — 외국인관광도시민박업</h1>
+    <div class="sub">서울 도심 후보지 점수화 + 비교 분석 · 종로구/중구 등</div>
+  </header>
+
+  <!-- 입력 안내 -->
+  <div class="card">
+    <div class="note" style="line-height: 1.7;">
+      <b>사용법.</b> 주소 입력 → <b>🔍 자동분석</b> 누르면 동 단위로 관광/교통/상권/경쟁 점수 자동 입력. 건물·임대료 등은 직접 입력. 데이터는 브라우저에 저장돼요.<br>
+      <b>자동분석 지원 지역.</b> 종로구·중구·용산구 주요 동 (창성/익선/북촌/명동/이태원 등). 미지원 지역은 수동 입력.<br>
+      <b>점수 가중치.</b> 관광 25% · 교통 20% · 상권 15% · 경쟁 10% · 건물 15% · 가성비 15%<br>
+      <b>법적 즉시 탈락.</b> 아파트/오피스텔 / 230㎡ 이상 / 호스트 비거주 — 셋 중 하나라도 해당되면 외국인민박업 허가 불가
+    </div>
+  </div>
+
+  <!-- 후보 추가 폼 -->
+  <div class="card">
+    <h2>＋ 새 후보지 추가</h2>
+
+    <div class="grid grid-2">
+      <div class="field">
+        <label>후보지 이름 (식별용)</label>
+        <input type="text" id="addr_name" placeholder="예: 창성동 후보1">
+      </div>
+      <div class="field">
+        <label>주소</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="addr_address" placeholder="예: 종로구 창성동 21-3" style="flex:1; min-width:0;">
+          <button type="button" id="autoAnalyze" style="padding:9px 14px; background:#6b8e4e; color:#fff; border:none; border-radius:8px; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;">🔍 자동분석</button>
+        </div>
+        <small>주소에 동 이름 포함 → 자동분석 클릭 → 아래 ①② 자동 입력</small>
+      </div>
+    </div>
+    <div id="autoAnalyzeResult" style="display:none; margin-bottom:14px; padding:12px 14px; background:#f4f8ed; border-left:3px solid #6b8e4e; border-radius:6px; font-size:13px;"></div>
+
+    <h3>① 입지 접근성</h3>
+    <div class="grid grid-3">
+      <div class="field">
+        <label>가장 가까운 관광지까지 도보 (분)</label>
+        <input type="number" id="addr_tourist_min" step="1" placeholder="분">
+        <small>경복궁/북촌/인사동/광화문/익선동 등 中 최단</small>
+      </div>
+      <div class="field">
+        <label>관광지 이름</label>
+        <input type="text" id="addr_tourist_name" placeholder="예: 경복궁">
+      </div>
+      <div class="field">
+        <label>가장 가까운 지하철역까지 도보 (분)</label>
+        <input type="number" id="addr_subway_min" step="1" placeholder="분">
+      </div>
+    </div>
+
+    <h3>② 주변 환경</h3>
+    <div class="grid grid-2">
+      <div class="field">
+        <label>외국인 친화 상권 (반경 200m 내 편의점·카페·식당)</label>
+        <select id="addr_commerce">
+          <option value="100">매우 좋음 — 20개 이상, 영어 메뉴 흔함</option>
+          <option value="80">좋음 — 10~20개</option>
+          <option value="60" selected>보통 — 5~10개</option>
+          <option value="40">부족 — 1~5개</option>
+          <option value="20">매우 부족</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>반경 500m 내 에어비앤비 숙소 수 (경쟁)</label>
+        <select id="addr_competition">
+          <option value="100">5개 미만 (블루오션)</option>
+          <option value="80">5~10개</option>
+          <option value="60" selected>10~20개</option>
+          <option value="40">20~40개</option>
+          <option value="20">40개 이상 (포화)</option>
+        </select>
+      </div>
+    </div>
+
+    <h3>③ 건물 조건 (외국인관광도시민박업 허가 요건)</h3>
+    <div class="grid grid-4">
+      <div class="field">
+        <label>건물 유형</label>
+        <select id="addr_building">
+          <option value="hanok">한옥</option>
+          <option value="detached" selected>단독주택</option>
+          <option value="multi_household">다가구주택</option>
+          <option value="multi_family">다세대주택</option>
+          <option value="apartment">아파트 (불가)</option>
+          <option value="officetel">오피스텔 (불가)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>전용면적 (㎡)</label>
+        <input type="number" id="addr_area" step="1" placeholder="㎡">
+        <small>230㎡ 미만</small>
+      </div>
+      <div class="field">
+        <label>호스트 거주 가능?</label>
+        <select id="addr_resident">
+          <option value="yes" selected>예</option>
+          <option value="no">아니오 (불가)</option>
+        </select>
+        <small>외국인민박은 호스트 거주 필수</small>
+      </div>
+      <div class="field">
+        <label>방 개수</label>
+        <input type="number" id="addr_rooms" step="1" placeholder="개">
+      </div>
+    </div>
+
+    <h3>④ 경제성</h3>
+    <div class="grid grid-3">
+      <div class="field">
+        <label>월 임대료 (자가면 0)</label>
+        <input type="number" id="addr_rent" step="100000" placeholder="원">
+      </div>
+      <div class="field">
+        <label>매매가 (해당없으면 0)</label>
+        <input type="number" id="addr_price" step="10000000" placeholder="원">
+      </div>
+      <div class="field">
+        <label>예상 월 매출</label>
+        <input type="number" id="addr_revenue" step="100000" placeholder="원">
+        <small>유사 에어비앤비 평균값 참고</small>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>비고 / 메모 (선택)</label>
+      <input type="text" id="addr_note" placeholder="자유 메모 (예: 옥상 있음, 한옥 리모델링 필요 등)">
+    </div>
+
+    <div style="display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap;">
+      <button id="addCandidate" type="button" class="btn-add" style="margin-top:0;">＋ 후보지 추가</button>
+      <button id="cancelEdit" type="button" style="display:none; padding:12px 22px; background:#fdfbf7; border:1px solid #d9d1c2; color:#5c5346; border-radius:8px; font-family:inherit; font-size:14px; font-weight:500; cursor:pointer;">취소</button>
+      <span id="editingNotice" style="display:none; font-size:13px; color:#8b6f47; font-weight:600;"></span>
+    </div>
+  </div>
+
+  <!-- 비교 차트 -->
+  <div class="card">
+    <h2>종합 점수 비교</h2>
+    <div id="compareChart"></div>
+  </div>
+
+  <!-- 후보 목록 -->
+  <div class="card">
+    <h2>후보지 상세</h2>
+    <div id="candidatesList"></div>
+  </div>
+
+  <!-- 항목별 비교 테이블 -->
+  <div class="card">
+    <h2>항목별 비교표</h2>
+    <div id="compareTableWrap"></div>
+  </div>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'location_candidates_v1';
+
+// ===== 동 단위 자동분석 데이터 (종로구·중구·용산구) =====
+const SEOUL_DONGS = [
+  // 종로구 — 서촌권 (경복궁 서쪽)
+  { name: '창성동', district: '종로구', tourist: { name: '경복궁', min: 7 }, subway: { name: '경복궁역', min: 5 }, commerce: 80, competition: 60, note: '서촌 진입부. 외국인 게스트 많음, 한옥/단독 다수.' },
+  { name: '통인동', district: '종로구', tourist: { name: '통인시장·경복궁', min: 5 }, subway: { name: '경복궁역', min: 6 }, commerce: 100, competition: 60, note: '통인시장 인접, 외국인 친화 상권 우수.' },
+  { name: '효자동', district: '종로구', tourist: { name: '경복궁', min: 6 }, subway: { name: '경복궁역', min: 7 }, commerce: 80, competition: 60 },
+  { name: '옥인동', district: '종로구', tourist: { name: '경복궁', min: 9 }, subway: { name: '경복궁역', min: 8 }, commerce: 60, competition: 60 },
+  { name: '청운동', district: '종로구', tourist: { name: '경복궁', min: 12 }, subway: { name: '경복궁역', min: 12 }, commerce: 40, competition: 80, note: '주거지역 성격, 관광 접근 다소 약함.' },
+  { name: '신교동', district: '종로구', tourist: { name: '경복궁', min: 10 }, subway: { name: '경복궁역', min: 9 }, commerce: 60, competition: 80 },
+  { name: '체부동', district: '종로구', tourist: { name: '경복궁', min: 8 }, subway: { name: '경복궁역', min: 6 }, commerce: 80, competition: 60 },
+  { name: '궁정동', district: '종로구', tourist: { name: '경복궁', min: 5 }, subway: { name: '경복궁역', min: 8 }, commerce: 60, competition: 80 },
+  { name: '누상동', district: '종로구', tourist: { name: '경복궁', min: 10 }, subway: { name: '경복궁역', min: 9 }, commerce: 40, competition: 80 },
+  { name: '누하동', district: '종로구', tourist: { name: '경복궁', min: 9 }, subway: { name: '경복궁역', min: 7 }, commerce: 60, competition: 80 },
+  // 북촌권
+  { name: '가회동', district: '종로구', tourist: { name: '북촌한옥마을', min: 2 }, subway: { name: '안국역', min: 7 }, commerce: 80, competition: 40, note: '북촌 한옥마을 중심. 한옥 프리미엄, 경쟁 매우 치열.' },
+  { name: '삼청동', district: '종로구', tourist: { name: '북촌한옥마을·삼청동길', min: 3 }, subway: { name: '안국역', min: 10 }, commerce: 80, competition: 60, note: '삼청동 카페거리, 외국인 인기.' },
+  { name: '소격동', district: '종로구', tourist: { name: '북촌한옥마을', min: 5 }, subway: { name: '안국역', min: 4 }, commerce: 80, competition: 60 },
+  { name: '팔판동', district: '종로구', tourist: { name: '북촌한옥마을', min: 3 }, subway: { name: '안국역', min: 7 }, commerce: 60, competition: 60 },
+  { name: '안국동', district: '종로구', tourist: { name: '북촌한옥마을·인사동', min: 5 }, subway: { name: '안국역', min: 2 }, commerce: 100, competition: 40, note: '안국역 바로, 외국인 동선 핵심.' },
+  { name: '재동', district: '종로구', tourist: { name: '북촌한옥마을', min: 5 }, subway: { name: '안국역', min: 4 }, commerce: 80, competition: 60 },
+  { name: '계동', district: '종로구', tourist: { name: '북촌한옥마을', min: 3 }, subway: { name: '안국역', min: 5 }, commerce: 80, competition: 40 },
+  { name: '원서동', district: '종로구', tourist: { name: '창덕궁·북촌', min: 4 }, subway: { name: '안국역', min: 6 }, commerce: 60, competition: 60 },
+  // 인사동/익선동권
+  { name: '익선동', district: '종로구', tourist: { name: '익선동 한옥거리', min: 1 }, subway: { name: '종로3가역', min: 3 }, commerce: 100, competition: 20, note: '익선동 한옥거리. 매우 인기 + 경쟁 포화.' },
+  { name: '인사동', district: '종로구', tourist: { name: '인사동거리', min: 2 }, subway: { name: '종로3가역', min: 5 }, commerce: 100, competition: 20, note: '인사동. 외국인 핵심 관광지, 경쟁 포화.' },
+  { name: '관훈동', district: '종로구', tourist: { name: '인사동', min: 3 }, subway: { name: '안국역', min: 5 }, commerce: 100, competition: 40 },
+  { name: '낙원동', district: '종로구', tourist: { name: '인사동', min: 4 }, subway: { name: '종로3가역', min: 4 }, commerce: 80, competition: 40 },
+  { name: '돈의동', district: '종로구', tourist: { name: '종묘', min: 5 }, subway: { name: '종로3가역', min: 4 }, commerce: 80, competition: 60 },
+  { name: '봉익동', district: '종로구', tourist: { name: '종묘', min: 4 }, subway: { name: '종로3가역', min: 3 }, commerce: 80, competition: 60 },
+  // 광화문/청계권
+  { name: '서린동', district: '종로구', tourist: { name: '광화문·청계천', min: 5 }, subway: { name: '종각역', min: 3 }, commerce: 100, competition: 40 },
+  { name: '청진동', district: '종로구', tourist: { name: '광화문광장', min: 7 }, subway: { name: '광화문역', min: 4 }, commerce: 80, competition: 60 },
+  { name: '견지동', district: '종로구', tourist: { name: '광화문광장', min: 7 }, subway: { name: '종각역', min: 5 }, commerce: 80, competition: 60 },
+  { name: '관철동', district: '종로구', tourist: { name: '청계광장', min: 3 }, subway: { name: '종각역', min: 2 }, commerce: 100, competition: 40 },
+  // 혜화/이화
+  { name: '혜화동', district: '종로구', tourist: { name: '대학로·낙산공원', min: 4 }, subway: { name: '혜화역', min: 5 }, commerce: 100, competition: 60, note: '대학로 인접. 젊은 외국인 일부.' },
+  { name: '명륜동', district: '종로구', tourist: { name: '대학로', min: 7 }, subway: { name: '혜화역', min: 8 }, commerce: 60, competition: 80 },
+  { name: '이화동', district: '종로구', tourist: { name: '낙산공원·이화벽화마을', min: 3 }, subway: { name: '혜화역', min: 7 }, commerce: 60, competition: 60, note: '이화벽화마을. 사진 명소.' },
+  // 외곽/창신
+  { name: '부암동', district: '종로구', tourist: { name: '경복궁', min: 25 }, subway: { name: '경복궁역', min: 25 }, commerce: 40, competition: 80, note: '부암동 카페거리. 교통 약점.' },
+  { name: '평창동', district: '종로구', tourist: { name: '경복궁', min: 30 }, subway: { name: '경복궁역', min: 30 }, commerce: 20, competition: 100, note: '주거 지역, 관광 접근성 약함.' },
+  { name: '창신동', district: '종로구', tourist: { name: '동대문DDP', min: 10 }, subway: { name: '동묘앞역', min: 6 }, commerce: 60, competition: 80 },
+  { name: '숭인동', district: '종로구', tourist: { name: '동묘시장', min: 5 }, subway: { name: '동묘앞역', min: 4 }, commerce: 60, competition: 80 },
+
+  // 중구
+  { name: '명동', district: '중구', tourist: { name: '명동거리', min: 1 }, subway: { name: '명동역', min: 2 }, commerce: 100, competition: 20, note: '외국인 관광 1번지. 경쟁 포화 + 단가 매우 높음.' },
+  { name: '회현동', district: '중구', tourist: { name: '남대문시장·남산', min: 3 }, subway: { name: '회현역', min: 3 }, commerce: 100, competition: 40 },
+  { name: '을지로동', district: '중구', alias: ['을지로'], tourist: { name: '청계천·익선동', min: 5 }, subway: { name: '을지로3가역', min: 4 }, commerce: 100, competition: 40, note: '힙지로 트렌드. 젊은 외국인 인기.' },
+  { name: '광희동', district: '중구', tourist: { name: '동대문DDP', min: 5 }, subway: { name: '동대문역사문화공원역', min: 4 }, commerce: 80, competition: 40 },
+  { name: '필동', district: '중구', tourist: { name: '남산골 한옥마을', min: 3 }, subway: { name: '충무로역', min: 4 }, commerce: 60, competition: 60 },
+  { name: '장충동', district: '중구', tourist: { name: '남산타워·장충단공원', min: 8 }, subway: { name: '동대입구역', min: 4 }, commerce: 60, competition: 80 },
+  { name: '신당동', district: '중구', tourist: { name: '동대문DDP', min: 12 }, subway: { name: '신당역', min: 5 }, commerce: 60, competition: 80 },
+  { name: '오장동', district: '중구', tourist: { name: '청계천', min: 6 }, subway: { name: '을지로4가역', min: 4 }, commerce: 80, competition: 60 },
+
+  // 용산구 — 외국인 관광 핵심
+  { name: '이태원동', district: '용산구', alias: ['이태원'], tourist: { name: '이태원거리', min: 2 }, subway: { name: '이태원역', min: 4 }, commerce: 100, competition: 20, note: '외국인 거주/관광 핵심. 경쟁 포화, 사고 이후 회복 中.' },
+  { name: '한남동', district: '용산구', alias: ['한남'], tourist: { name: '한남동 카페거리', min: 3 }, subway: { name: '한강진역', min: 5 }, commerce: 80, competition: 40, note: '한남동 트렌드. 고급 외국인 게스트.' },
+  { name: '용산동2가', district: '용산구', tourist: { name: '남산공원', min: 7 }, subway: { name: '녹사평역', min: 6 }, commerce: 60, competition: 80 },
+  { name: '후암동', district: '용산구', tourist: { name: '남산타워', min: 10 }, subway: { name: '서울역', min: 8 }, commerce: 60, competition: 80, note: '해방촌 인접. 트렌디 외국인 일부.' },
+  { name: '해방촌', district: '용산구', tourist: { name: '남산타워·이태원', min: 5 }, subway: { name: '녹사평역', min: 8 }, commerce: 80, competition: 40, note: '해방촌. 외국인 게스트 트렌디 선호.' },
+  { name: '청파동', district: '용산구', tourist: { name: '남영동', min: 8 }, subway: { name: '숙대입구역', min: 5 }, commerce: 60, competition: 80 },
+  { name: '갈월동', district: '용산구', tourist: { name: '남영동·서울역', min: 5 }, subway: { name: '남영역', min: 3 }, commerce: 60, competition: 60 },
+];
+
+function matchDong(address) {
+  if (!address) return null;
+  // 긴 이름부터 매칭 (중복 매칭 방지)
+  const sorted = [...SEOUL_DONGS].sort((a,b) => b.name.length - a.name.length);
+  for (const d of sorted) {
+    if (address.includes(d.name)) return d;
+  }
+  for (const d of sorted) {
+    for (const alias of (d.alias || [])) {
+      if (address.includes(alias)) return d;
+    }
+  }
+  return null;
+}
+
+function commerceLabel(v) {
+  return ({100:'매우 좋음', 80:'좋음', 60:'보통', 40:'부족', 20:'매우 부족'})[v] || '보통';
+}
+function competitionLabel(v) {
+  return ({100:'5개 미만 (블루오션)', 80:'5~10개', 60:'10~20개', 40:'20~40개', 20:'40개+ (포화)'})[v] || '?';
+}
+
+function autoAnalyze() {
+  const address = document.getElementById('addr_address').value.trim();
+  if (!address) { alert('주소를 먼저 입력하세요.'); return; }
+  const d = matchDong(address);
+  const box = document.getElementById('autoAnalyzeResult');
+  if (!d) {
+    box.style.display = 'block';
+    box.style.background = '#faf3f3';
+    box.style.borderLeftColor = '#c4a4a4';
+    box.innerHTML = `<div style="color:#7a4040;"><b>⚠ 인식 실패</b> — 이 주소의 동을 자동분석 DB에서 찾지 못했습니다.<br><span style="font-size:12px;">현재 지원: 종로구·중구·용산구 주요 동. 미지원 지역은 아래 ①② 항목을 수동으로 입력해주세요.</span></div>`;
+    return;
+  }
+
+  // 자동 입력
+  document.getElementById('addr_tourist_min').value = d.tourist.min;
+  document.getElementById('addr_tourist_name').value = d.tourist.name;
+  document.getElementById('addr_subway_min').value = d.subway.min;
+  document.getElementById('addr_commerce').value = d.commerce;
+  document.getElementById('addr_competition').value = d.competition;
+
+  // 결과 표시
+  box.style.display = 'block';
+  box.style.background = '#f4f8ed';
+  box.style.borderLeftColor = '#6b8e4e';
+  box.innerHTML = `
+    <div style="font-weight:700; color:#4a6b32; margin-bottom:6px;">✓ ${d.name} (${d.district}) 인식 — 아래 ①② 자동 입력됨</div>
+    <div style="color:#5c5346; line-height:1.7;">
+      관광 <b>${d.tourist.min}분</b> (${d.tourist.name}) ·
+      지하철 <b>${d.subway.min}분</b> (${d.subway.name})<br>
+      상권 <b>${commerceLabel(d.commerce)}</b> · 경쟁 <b>${competitionLabel(d.competition)}</b>
+    </div>
+    ${d.note ? `<div style="margin-top:8px; font-size:12px; color:#7a6f5f; padding-top:6px; border-top:1px dashed #c4d8a8;">📝 ${d.note}</div>` : ''}
+    <div style="margin-top:6px; font-size:11px; color:#9a8f7f;">자동값은 동 단위 평균치. 정확한 정보 있으면 아래 입력란에서 직접 수정하세요.</div>
+  `;
+}
+
+// ===== 데이터 저장 =====
+function loadCandidates() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    return Array.isArray(data) ? data : [];
+  } catch { return []; }
+}
+function saveCandidates(list) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
+
+// ===== 점수 계산 =====
+function scoreTourist(min) {
+  if (min <= 5) return 100;
+  if (min <= 10) return 85;
+  if (min <= 15) return 65;
+  if (min <= 20) return 45;
+  if (min <= 30) return 25;
+  return 10;
+}
+function scoreSubway(min) {
+  if (min <= 5) return 100;
+  if (min <= 8) return 85;
+  if (min <= 12) return 65;
+  if (min <= 18) return 40;
+  return 20;
+}
+function scoreBuilding(type) {
+  return {
+    hanok: 100,
+    detached: 90,
+    multi_household: 80,
+    multi_family: 55,
+    apartment: 0,
+    officetel: 0
+  }[type] ?? 50;
+}
+function scoreValue(revenue, rent, price) {
+  if (rent > 0 && revenue > 0) {
+    const ratio = revenue / rent;
+    if (ratio >= 3) return 100;
+    if (ratio >= 2.5) return 85;
+    if (ratio >= 2) return 70;
+    if (ratio >= 1.5) return 55;
+    if (ratio >= 1) return 30;
+    return 10;
+  } else if (price > 0 && revenue > 0) {
+    const yieldPct = (revenue * 12 / price) * 100;
+    if (yieldPct >= 8) return 100;
+    if (yieldPct >= 6) return 80;
+    if (yieldPct >= 4) return 60;
+    if (yieldPct >= 2) return 40;
+    return 20;
+  } else if (rent === 0 && price === 0) {
+    return 70; // 자가/무비용 → 중상위 처리
+  }
+  return 50;
+}
+
+function isLegallyDisqualified(c) {
+  const reasons = [];
+  if (c.building === 'apartment') reasons.push('아파트는 외국인민박업 허가 불가');
+  if (c.building === 'officetel') reasons.push('오피스텔은 외국인민박업 허가 불가');
+  if (c.area >= 230 && c.area > 0) reasons.push(`전용면적 ${c.area}㎡ — 230㎡ 미만이어야 허가 가능`);
+  if (c.resident === 'no') reasons.push('호스트 비거주 — 외국인민박업은 거주 의무');
+  return reasons;
+}
+
+function scoreCandidate(c) {
+  const tourist = scoreTourist(c.tourist_min || 999);
+  const subway = scoreSubway(c.subway_min || 999);
+  const commerce = +c.commerce || 0;
+  const competition = +c.competition || 0;
+  const building = scoreBuilding(c.building);
+  const value = scoreValue(c.revenue || 0, c.rent || 0, c.price || 0);
+  const total = Math.round(
+    tourist * 0.25 + subway * 0.20 + commerce * 0.15 +
+    competition * 0.10 + building * 0.15 + value * 0.15
+  );
+  const disqualifyReasons = isLegallyDisqualified(c);
+  return {
+    tourist, subway, commerce, competition, building, value, total,
+    disqualified: disqualifyReasons.length > 0,
+    disqualifyReasons
+  };
+}
+
+// ===== 강점/약점 생성 =====
+function generateReasons(c, s) {
+  const pros = [];
+  const cons = [];
+  const warnings = [];
+
+  // 관광
+  if (s.tourist >= 85) pros.push(`${c.tourist_name || '관광지'}까지 도보 ${c.tourist_min}분 — 외국인 게스트 최적 거리`);
+  else if (s.tourist >= 65) pros.push(`${c.tourist_name || '관광지'} 도보 ${c.tourist_min}분 — 무난한 거리`);
+  else if (s.tourist >= 45) warnings.push(`${c.tourist_name || '관광지'} 도보 ${c.tourist_min}분 — 다소 멈, 가격 경쟁력 필요`);
+  else cons.push(`${c.tourist_name || '관광지'} 도보 ${c.tourist_min || '?'}분 — 외국인 게스트가 멀게 느낌`);
+
+  // 교통
+  if (s.subway >= 85) pros.push(`지하철역 도보 ${c.subway_min}분 — 공항·관광 이동 매우 편리`);
+  else if (s.subway >= 65) pros.push(`지하철역 도보 ${c.subway_min}분 — 적당함`);
+  else if (s.subway >= 40) warnings.push(`지하철역 도보 ${c.subway_min}분 — 무거운 캐리어로 부담될 수 있음`);
+  else cons.push(`지하철역 도보 ${c.subway_min || '?'}분 — 외국인 게스트 접근성 약점`);
+
+  // 상권
+  if (s.commerce >= 80) pros.push('주변 편의시설 풍부 — 외국인 게스트가 혼자 활동하기 좋음');
+  else if (s.commerce >= 60) {}
+  else cons.push('주변 편의시설 부족 — 외국인 게스트 불편 호소 가능성');
+
+  // 경쟁
+  if (s.competition >= 80) pros.push('주변 경쟁 숙소 적음 — 가격 우위 확보 가능');
+  else if (s.competition <= 40) warnings.push('주변 에어비앤비 밀도 높음 — 차별화 컨셉/가격 필요');
+
+  // 건물
+  if (c.building === 'hanok') pros.push('한옥 — 외국인 선호도 최상위, 프리미엄 가격 책정 가능');
+  else if (c.building === 'detached') pros.push('단독주택 — 외국인민박업 가장 적합한 유형');
+  else if (c.building === 'multi_household') {}
+  else if (c.building === 'multi_family') warnings.push('다세대주택 — 외국인민박업 허가 받기 까다로움, 사전 구청 확인 필수');
+
+  // 면적
+  if (c.area > 0 && c.area >= 200 && c.area < 230) warnings.push(`전용면적 ${c.area}㎡ — 법적 한계(230㎡) 근접, 정확한 측량 필요`);
+  if (c.area > 0 && c.area < 50) warnings.push(`전용면적 ${c.area}㎡ — 좁아서 객실 수 제한 및 단가 한계`);
+
+  // 가성비
+  if (c.rent > 0 && c.revenue > 0) {
+    const ratio = (c.revenue / c.rent).toFixed(2);
+    if (s.value >= 85) pros.push(`매출/임대료 비율 ${ratio} — 매우 안정적인 수익 구조`);
+    else if (s.value >= 55) {}
+    else if (s.value >= 30) warnings.push(`매출/임대료 비율 ${ratio} — 빠듯, 점유율 변동 시 적자 위험`);
+    else cons.push(`매출/임대료 비율 ${ratio} — 비현실적 수익 구조, 재검토 필요`);
+  } else if (c.price > 0 && c.revenue > 0) {
+    const yieldPct = ((c.revenue * 12 / c.price) * 100).toFixed(1);
+    if (s.value >= 80) pros.push(`연 수익률 ${yieldPct}% — 자산가치 + 운영수익 모두 양호`);
+    else if (s.value < 40) cons.push(`연 수익률 ${yieldPct}% — 매매가 회수 기간 김`);
+  }
+
+  return { pros, cons, warnings };
+}
+
+// ===== 렌더링 =====
+function getScoreClass(n) {
+  if (n >= 75) return 'high';
+  if (n >= 50) return 'mid';
+  if (n >= 30) return 'low';
+  return 'bad';
+}
+function getScoreColor(n) {
+  if (n >= 75) return '#6b8e4e';
+  if (n >= 50) return '#c4a878';
+  if (n >= 30) return '#c08530';
+  return '#b04040';
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function buildingLabel(t) {
+  return { hanok:'한옥', detached:'단독주택', multi_household:'다가구', multi_family:'다세대', apartment:'아파트', officetel:'오피스텔' }[t] || '-';
+}
+
+function render() {
+  const list = loadCandidates();
+  const scored = list.map(c => ({ ...c, scores: scoreCandidate(c), reasons: generateReasons(c, scoreCandidate(c)) }))
+                    .sort((a,b) => b.scores.total - a.scores.total);
+
+  // 비교 차트
+  const chart = document.getElementById('compareChart');
+  if (scored.length === 0) {
+    chart.innerHTML = '<div class="empty">아직 입력된 후보지가 없습니다. 위에서 추가해보세요.</div>';
+  } else {
+    chart.innerHTML = scored.map((c, idx) => {
+      const color = c.scores.disqualified ? '#b04040' : getScoreColor(c.scores.total);
+      const label = c.scores.disqualified ? '탈락' : c.scores.total;
+      return `
+        <div class="compare-row">
+          <div class="name">${idx === 0 && !c.scores.disqualified ? '🏆 ' : ''}${escapeHtml(c.name)}</div>
+          <div class="compare-track"><div class="compare-fill" style="width:${c.scores.total}%; background:${color};"></div></div>
+          <div class="compare-score" style="color:${color};">${label}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // 상세 카드
+  const cardsEl = document.getElementById('candidatesList');
+  if (scored.length === 0) {
+    cardsEl.innerHTML = '<div class="empty">후보지를 추가하면 상세 분석이 여기에 나타납니다.</div>';
+  } else {
+    cardsEl.innerHTML = scored.map((c, idx) => {
+      const cls = c.scores.disqualified ? 'disqualified' : (idx === 0 ? 'top' : '');
+      const dq = c.scores.disqualified
+        ? `<div class="disqualify-banner">⛔ 법적 허가 불가 — ${c.scores.disqualifyReasons.join(' · ')}</div>`
+        : '';
+      const noteHtml = c.note ? `<div style="font-size:12px; color:#7a6f5f; margin-top:8px; padding:8px 10px; background:#faf6ee; border-radius:6px;">📝 ${escapeHtml(c.note)}</div>` : '';
+      return `
+        <div class="candidate ${cls}">
+          <div class="candidate-head">
+            <div>
+              <div class="candidate-name">${idx === 0 && !c.scores.disqualified ? '🏆 ' : ''}${escapeHtml(c.name)}</div>
+              <div class="candidate-addr">${escapeHtml(c.address || '')} · ${buildingLabel(c.building)} ${c.area ? c.area+'㎡' : ''} ${c.rooms ? '방 '+c.rooms : ''}</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="total-score">${c.scores.total}</div>
+              <div class="total-label">/ 100</div>
+            </div>
+          </div>
+          ${dq}
+          <div style="margin-top: 14px;">
+            ${scoreBarHtml('관광 접근성', c.scores.tourist)}
+            ${scoreBarHtml('교통 편의', c.scores.subway)}
+            ${scoreBarHtml('주변 상권', c.scores.commerce)}
+            ${scoreBarHtml('경쟁 밀도', c.scores.competition)}
+            ${scoreBarHtml('건물 조건', c.scores.building)}
+            ${scoreBarHtml('가성비', c.scores.value)}
+          </div>
+          <div class="reasons">
+            ${c.reasons.pros.length ? `<ul class="pros">${c.reasons.pros.map(t=>`<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
+            ${c.reasons.warnings.length ? `<ul class="badges">${c.reasons.warnings.map(t=>`<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
+            ${c.reasons.cons.length ? `<ul class="cons">${c.reasons.cons.map(t=>`<li>${escapeHtml(t)}</li>`).join('')}</ul>` : ''}
+          </div>
+          ${noteHtml}
+          <div style="text-align:right; margin-top:10px; display:flex; justify-content:flex-end; gap:8px;">
+            <button class="btn-detail" data-edit-id="${c.id}">✏️ 수정</button>
+            <button class="btn-remove" data-id="${c.id}">삭제</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    cardsEl.querySelectorAll('.btn-remove').forEach(btn => {
+      btn.addEventListener('click', e => removeCandidate(+e.target.dataset.id));
+    });
+    cardsEl.querySelectorAll('[data-edit-id]').forEach(btn => {
+      btn.addEventListener('click', e => startEditCandidate(+e.currentTarget.dataset.editId));
+    });
+  }
+
+  // 비교 테이블
+  const tblWrap = document.getElementById('compareTableWrap');
+  if (scored.length === 0) {
+    tblWrap.innerHTML = '<div class="empty">후보지 2개 이상 추가 시 비교 가능</div>';
+  } else {
+    const rows = [
+      ['종합', c => `<b style="color:${c.scores.disqualified ? '#b04040' : getScoreColor(c.scores.total)};">${c.scores.disqualified ? '탈락' : c.scores.total}</b>`],
+      ['관광 접근성', c => `${c.scores.tourist}<br><small>${c.tourist_min || '?'}분</small>`],
+      ['교통', c => `${c.scores.subway}<br><small>${c.subway_min || '?'}분</small>`],
+      ['상권', c => c.scores.commerce],
+      ['경쟁밀도', c => c.scores.competition],
+      ['건물', c => `${c.scores.building}<br><small>${buildingLabel(c.building)}</small>`],
+      ['가성비', c => c.scores.value],
+      ['월임대료', c => c.rent ? (c.rent/10000).toFixed(0)+'만' : (c.price ? (c.price/100000000).toFixed(2)+'억 매매' : '-')],
+      ['예상매출', c => c.revenue ? (c.revenue/10000).toFixed(0)+'만' : '-'],
+    ];
+    let html = '<table class="compare-table"><thead><tr><th>항목</th>';
+    scored.forEach(c => { html += `<th>${escapeHtml(c.name)}</th>`; });
+    html += '</tr></thead><tbody>';
+    rows.forEach(([label, fn]) => {
+      html += `<tr><td>${label}</td>`;
+      scored.forEach(c => { html += `<td>${fn(c)}</td>`; });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    tblWrap.innerHTML = html;
+  }
+}
+
+function scoreBarHtml(label, score) {
+  return `
+    <div class="score-bar">
+      <div>${label}</div>
+      <div class="score-track"><div class="score-fill ${getScoreClass(score)}" style="width:${score}%;"></div></div>
+      <div class="score-num">${score}</div>
+    </div>
+  `;
+}
+
+let editingId = null;
+
+function resetForm() {
+  ['addr_name','addr_address','addr_tourist_min','addr_tourist_name','addr_subway_min',
+   'addr_area','addr_rooms','addr_rent','addr_price','addr_revenue','addr_note']
+    .forEach(id => document.getElementById(id).value = '');
+  document.getElementById('addr_commerce').value = '60';
+  document.getElementById('addr_competition').value = '60';
+  document.getElementById('addr_building').value = 'detached';
+  document.getElementById('addr_resident').value = 'yes';
+}
+
+function exitEditMode() {
+  editingId = null;
+  document.getElementById('addCandidate').textContent = '＋ 후보지 추가';
+  document.getElementById('cancelEdit').style.display = 'none';
+  document.getElementById('editingNotice').style.display = 'none';
+}
+
+function startEditCandidate(id) {
+  const c = loadCandidates().find(x => x.id === id);
+  if (!c) return;
+  editingId = id;
+  document.getElementById('addr_name').value = c.name || '';
+  document.getElementById('addr_address').value = c.address || '';
+  document.getElementById('addr_tourist_min').value = c.tourist_min || '';
+  document.getElementById('addr_tourist_name').value = c.tourist_name || '';
+  document.getElementById('addr_subway_min').value = c.subway_min || '';
+  document.getElementById('addr_commerce').value = c.commerce ?? 60;
+  document.getElementById('addr_competition').value = c.competition ?? 60;
+  document.getElementById('addr_building').value = c.building || 'detached';
+  document.getElementById('addr_area').value = c.area || '';
+  document.getElementById('addr_resident').value = c.resident || 'yes';
+  document.getElementById('addr_rooms').value = c.rooms || '';
+  document.getElementById('addr_rent').value = c.rent || '';
+  document.getElementById('addr_price').value = c.price || '';
+  document.getElementById('addr_revenue').value = c.revenue || '';
+  document.getElementById('addr_note').value = c.note || '';
+
+  document.getElementById('addCandidate').textContent = '💾 수정 저장';
+  document.getElementById('cancelEdit').style.display = 'inline-block';
+  const notice = document.getElementById('editingNotice');
+  notice.style.display = 'inline-block';
+  notice.textContent = `📝 "${c.name}" 수정 중`;
+  document.getElementById('autoAnalyzeResult').style.display = 'none';
+
+  // 폼 카드로 스크롤
+  const formCard = document.querySelector('#addr_name').closest('.card');
+  formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function cancelEdit() {
+  exitEditMode();
+  resetForm();
+  document.getElementById('autoAnalyzeResult').style.display = 'none';
+}
+
+function addCandidate() {
+  const name = document.getElementById('addr_name').value.trim();
+  if (!name) { alert('후보지 이름은 필수입니다.'); return; }
+
+  const data = {
+    name,
+    address: document.getElementById('addr_address').value.trim(),
+    tourist_min: +document.getElementById('addr_tourist_min').value || 0,
+    tourist_name: document.getElementById('addr_tourist_name').value.trim(),
+    subway_min: +document.getElementById('addr_subway_min').value || 0,
+    commerce: +document.getElementById('addr_commerce').value,
+    competition: +document.getElementById('addr_competition').value,
+    building: document.getElementById('addr_building').value,
+    area: +document.getElementById('addr_area').value || 0,
+    resident: document.getElementById('addr_resident').value,
+    rooms: +document.getElementById('addr_rooms').value || 0,
+    rent: +document.getElementById('addr_rent').value || 0,
+    price: +document.getElementById('addr_price').value || 0,
+    revenue: +document.getElementById('addr_revenue').value || 0,
+    note: document.getElementById('addr_note').value.trim()
+  };
+
+  const list = loadCandidates();
+  if (editingId !== null) {
+    const idx = list.findIndex(c => c.id === editingId);
+    if (idx >= 0) list[idx] = { ...list[idx], ...data };
+    exitEditMode();
+  } else {
+    list.push({ id: Date.now(), ...data });
+  }
+  saveCandidates(list);
+  resetForm();
+  document.getElementById('autoAnalyzeResult').style.display = 'none';
+  render();
+  window.scrollTo({ top: document.querySelector('#compareChart').offsetTop - 20, behavior: 'smooth' });
+}
+
+function removeCandidate(id) {
+  if (!confirm('이 후보지를 삭제할까요?')) return;
+  const list = loadCandidates().filter(c => c.id !== id);
+  saveCandidates(list);
+  // 수정 중이던 항목이 삭제되면 수정 모드 종료
+  if (editingId === id) { exitEditMode(); resetForm(); }
+  render();
+}
+
+document.getElementById('addCandidate').addEventListener('click', addCandidate);
+document.getElementById('cancelEdit').addEventListener('click', cancelEdit);
+document.getElementById('autoAnalyze').addEventListener('click', autoAnalyze);
+// 주소 입력 후 Enter로도 자동분석 실행
+document.getElementById('addr_address').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); autoAnalyze(); }
+});
+render();
+</script>
+</body>
+</html>
